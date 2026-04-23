@@ -14,18 +14,18 @@ type Repo struct {
 
 func (r *Repo) FindAll(f *model.Filters) ([]model.Profile, int, error) {
 
-	base := `FROM profiles WHERE 1=1`
-	args := []interface{}{}
+	base := "FROM profiles WHERE 1=1"
+	args := []any{}
 	i := 1
 
 	if f.Gender != "" {
-		base += fmt.Sprintf(" AND LOWER(gender)=LOWER($%d)", i)
+		base += fmt.Sprintf(" AND gender=$%d", i)
 		args = append(args, f.Gender)
 		i++
 	}
 
 	if f.AgeGroup != "" {
-		base += fmt.Sprintf(" AND LOWER(age_group)=LOWER($%d)", i)
+		base += fmt.Sprintf(" AND age_group=$%d", i)
 		args = append(args, f.AgeGroup)
 		i++
 	}
@@ -48,38 +48,33 @@ func (r *Repo) FindAll(f *model.Filters) ([]model.Profile, int, error) {
 		i++
 	}
 
-	if f.MinGenderProbability != nil {
-		base += fmt.Sprintf(" AND gender_probability >= $%d", i)
-		args = append(args, *f.MinGenderProbability)
-		i++
-	}
-
-	if f.MinCountryProbability != nil {
-		base += fmt.Sprintf(" AND country_probability >= $%d", i)
-		args = append(args, *f.MinCountryProbability)
-		i++
-	}
-
-	// total count (FILTERED)
+	// COUNT
 	var total int
-	countQuery := "SELECT COUNT(*) " + base
-	if err := r.DB.QueryRow(countQuery, args...).Scan(&total); err != nil {
+	countQ := "SELECT COUNT(*) " + base
+	if err := r.DB.QueryRow(countQ, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	// sorting
+	// SORT
 	sortBy := "created_at"
 	order := "DESC"
 
-	switch f.SortBy {
-	case "age", "created_at", "gender_probability":
-		sortBy = f.SortBy
+	if f.SortBy != "" {
+		allowed := map[string]bool{
+			"age":                true,
+			"created_at":         true,
+			"gender_probability": true,
+		}
+		if allowed[f.SortBy] {
+			sortBy = f.SortBy
+		}
 	}
 
 	if strings.ToLower(f.Order) == "asc" {
 		order = "ASC"
 	}
 
+	// QUERY
 	query := `
 	SELECT id, name, gender, gender_probability,
 	       age, age_group, country_id, country_name,
@@ -96,26 +91,48 @@ func (r *Repo) FindAll(f *model.Filters) ([]model.Profile, int, error) {
 	}
 	defer rows.Close()
 
-	var profiles []model.Profile
+	var res []model.Profile
 
 	for rows.Next() {
 		var p model.Profile
-		if err := rows.Scan(
-			&p.ID,
-			&p.Name,
-			&p.Gender,
-			&p.GenderProbability,
-			&p.Age,
-			&p.AgeGroup,
-			&p.CountryID,
-			&p.CountryName,
-			&p.CountryProbability,
+		rows.Scan(
+			&p.ID, &p.Name, &p.Gender,
+			&p.GenderProbability, &p.Age,
+			&p.AgeGroup, &p.CountryID,
+			&p.CountryName, &p.CountryProbability,
 			&p.CreatedAt,
-		); err != nil {
-			return nil, 0, err
-		}
-		profiles = append(profiles, p)
+		)
+		res = append(res, p)
 	}
 
-	return profiles, total, nil
+	return res, total, nil
+}
+
+func (r *Repo) Create(p *model.Profile) error {
+	query := `
+	INSERT INTO profiles (
+		id, name, gender, gender_probability,
+		age, age_group, country_id, country_name,
+		country_probability, created_at
+	) VALUES (
+		$1,$2,$3,$4,$5,$6,$7,$8,$9,$10
+	)
+	ON CONFLICT (name) DO NOTHING
+	`
+
+	_, err := r.DB.Exec(
+		query,
+		p.ID,
+		p.Name,
+		p.Gender,
+		p.GenderProbability,
+		p.Age,
+		p.AgeGroup,
+		p.CountryID,
+		p.CountryName,
+		p.CountryProbability,
+		p.CreatedAt,
+	)
+
+	return err
 }

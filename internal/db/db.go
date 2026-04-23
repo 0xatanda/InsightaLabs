@@ -9,7 +9,8 @@ import (
 )
 
 func Connect() *sql.DB {
-	dsn := os.Getenv("DATABASE")
+	dsn := os.Getenv("DATABASE_URL")
+
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		log.Fatal(err)
@@ -18,5 +19,6 @@ func Connect() *sql.DB {
 	if err := db.Ping(); err != nil {
 		log.Fatal(err)
 	}
+
 	return db
 }

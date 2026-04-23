@@ -2,24 +2,18 @@ package parser
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/0xatanda/InsightaLabs/internal/model"
 )
 
-var countryMap = map[string]string{
-	"nigeria": "NG",
-	"kenya":   "KE",
-	"angola":  "AO",
-	"benin":   "BJ",
-	"ghana":   "GH",
-}
-
 func Parse(q string) (*model.Filters, error) {
 	q = strings.ToLower(q)
 
-	f := &model.Filters{}
+	f := &model.Filters{
+		Page:  1,
+		Limit: 10,
+	}
 
 	// gender
 	if strings.Contains(q, "male") {
@@ -43,7 +37,7 @@ func Parse(q string) (*model.Filters, error) {
 		f.AgeGroup = "senior"
 	}
 
-	// "young" rule (special)
+	// young rule
 	if strings.Contains(q, "young") {
 		min := 16
 		max := 24
@@ -51,30 +45,23 @@ func Parse(q string) (*model.Filters, error) {
 		f.MaxAge = &max
 	}
 
-	// "above X"
-	if strings.Contains(q, "above") {
-		var val int
-		_, err := fmt.Sscanf(q, "%*s above %d", &val)
-		if err == nil {
-			f.MinAge = &val
-		}
+	// country
+	if strings.Contains(q, "nigeria") {
+		f.CountryID = "NG"
+	}
+	if strings.Contains(q, "kenya") {
+		f.CountryID = "KE"
+	}
+	if strings.Contains(q, "angola") {
+		f.CountryID = "AO"
 	}
 
-	// country detection
-	for k, v := range countryMap {
-		if strings.Contains(q, k) {
-			f.CountryID = v
-			break
-		}
-	}
-
-	// validation
 	if f.Gender == "" &&
 		f.AgeGroup == "" &&
 		f.CountryID == "" &&
 		f.MinAge == nil &&
 		f.MaxAge == nil {
-		return nil, errors.New("unable to interpret")
+		return nil, errors.New("unable to interpret query")
 	}
 
 	return f, nil

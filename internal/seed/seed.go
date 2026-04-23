@@ -22,7 +22,9 @@ func Run(repo *repository.Repo) error {
 	}
 
 	for _, p := range profiles {
-		_ = repo.Create(&p) // rely on UNIQUE(name)
+		if err := repo.Create(&p); err != nil {
+			continue
+		} // rely on UNIQUE(name)
 	}
 
 	return nil
