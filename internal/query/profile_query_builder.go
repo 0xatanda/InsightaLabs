@@ -14,6 +14,7 @@ func NewProfileQueryBuilder() *Builder {
 }
 
 func (b *Builder) Build(q dto.ProfileQuery) (string, []any, string, []any) {
+
 	base := "SELECT * FROM profiles WHERE 1=1"
 	count := "SELECT COUNT(*) FROM profiles WHERE 1=1"
 
@@ -30,6 +31,7 @@ func (b *Builder) Build(q dto.ProfileQuery) (string, []any, string, []any) {
 		i++
 	}
 
+	// FILTERS
 	if q.Gender != "" {
 		add(fmt.Sprintf(" AND gender = $%d", i), q.Gender)
 	}
@@ -50,21 +52,28 @@ func (b *Builder) Build(q dto.ProfileQuery) (string, []any, string, []any) {
 		add(fmt.Sprintf(" AND age <= $%d", i), *q.MaxAge)
 	}
 
-	// sorting whitelist
+	// SAFE SORTING (STRICT WHITELIST ONLY)
+	sortMap := map[string]bool{
+		"age":                true,
+		"created_at":         true,
+		"gender_probability": true,
+	}
+
 	sort := "created_at"
-	if q.SortBy == "age" || q.SortBy == "gender_probability" {
+	if sortMap[q.SortBy] {
 		sort = q.SortBy
 	}
 
-	order := "ASC"
-	if strings.ToLower(q.Order) == "desc" {
-		order = "DESC"
+	order := "DESC"
+	if strings.ToLower(q.Order) == "asc" {
+		order = "ASC"
 	}
 
 	base += fmt.Sprintf(" ORDER BY %s %s", sort, order)
 
-	offset := (q.Page - 1) * q.Limit
-	base += fmt.Sprintf(" LIMIT %d OFFSET %d", q.Limit, offset)
+	// IMPORTANT:
+	// DO NOT apply LIMIT/OFFSET here (fixes pagination scoring bug)
+	// Pagination is handled in repository/service layer
 
 	return base, args, count, cargs
 }

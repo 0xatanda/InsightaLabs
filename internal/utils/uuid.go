@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/rand"
 	"fmt"
+	"strconv"
 )
 
 func UUIDv7() string {
@@ -14,4 +15,12 @@ func UUIDv7() string {
 
 	return fmt.Sprintf("%x-%x-%x-%x-%x",
 		b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+}
+
+func ParseInt(val string, fallback int) int {
+	n, err := strconv.Atoi(val)
+	if err != nil || n <= 0 {
+		return fallback
+	}
+	return n
 }
