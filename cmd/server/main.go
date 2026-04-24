@@ -13,7 +13,7 @@ import (
 
 func main() {
 
-	db, err := sql.Open("postgres", "postgres://appuser:password@localhost:5432/profiles_db?sslmode=disable")
+	db, err := sql.Open("postgres", "postgres://appuser:atanda@localhost:5432/profiles_db?sslmode=disable")
 	if err != nil {
 		log.Fatal(err)
 	}
