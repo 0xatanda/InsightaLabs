@@ -25,7 +25,10 @@ func (h *Handler) Profiles(w http.ResponseWriter, r *http.Request) {
 
 	data, total, err := h.ProfileService.Get(q)
 	if err != nil {
-		utils.JSON(w, 500, map[string]string{"status": "error"})
+		utils.JSON(w, 500, map[string]string{
+			"status":  "error",
+			"message": err.Error(),
+		})
 		return
 	}
 
