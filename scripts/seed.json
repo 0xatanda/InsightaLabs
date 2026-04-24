@@ -1,0 +1,30 @@
+[
+  {
+    "name": "emmanuel okafor",
+    "gender": "male",
+    "age": 34,
+    "country_id": "NG",
+    "country_name": "Nigeria"
+  },
+  {
+    "name": "amina diallo",
+    "gender": "female",
+    "age": 22,
+    "country_id": "BJ",
+    "country_name": "Benin"
+  },
+  {
+    "name": "kwame mensah",
+    "gender": "male",
+    "age": 19,
+    "country_id": "GH",
+    "country_name": "Ghana"
+  },
+  {
+    "name": "lucas ndlovu",
+    "gender": "male",
+    "age": 41,
+    "country_id": "ZA",
+    "country_name": "South Africa"
+  }
+]
