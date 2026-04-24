@@ -1,7 +1,8 @@
 package service
 
 import (
-	"fmt"
+	"errors"
+	"strings"
 
 	"github.com/0xatanda/InsightaLabs/internal/domain"
 	"github.com/0xatanda/InsightaLabs/internal/dto"
@@ -21,23 +22,24 @@ func NewProfileService(r *repository.ProfileRepository, b *query.Builder) *Profi
 	}
 }
 
+var validSort = map[string]bool{
+	"":                   true,
+	"age":                true,
+	"created_at":         true,
+	"gender_probability": true,
+}
+
+var validOrder = map[string]bool{
+	"":     true,
+	"asc":  true,
+	"desc": true,
+}
+
 func (s *ProfileService) Get(q dto.ProfileQuery) ([]domain.Profile, int, error) {
 
-	// ✅ VALIDATE sort_by
-	validSort := map[string]bool{
-		"age":                true,
-		"created_at":         true,
-		"gender_probability": true,
-		"":                   true, // allow empty → default
-	}
-
-	if !validSort[q.SortBy] {
-		return nil, 0, fmt.Errorf("Invalid query parameters")
-	}
-
-	// ✅ VALIDATE order
-	if q.Order != "" && q.Order != "asc" && q.Order != "desc" {
-		return nil, 0, fmt.Errorf("Invalid query parameters")
+	// 🔴 VALIDATE FIRST
+	if !validSort[q.SortBy] || !validOrder[strings.ToLower(q.Order)] {
+		return nil, 0, errors.New("Invalid query parameters")
 	}
 
 	query, args, countQuery, countArgs := s.builder.Build(q)
