@@ -17,14 +17,13 @@ func Run(repo *repository.Repo) error {
 	defer file.Close()
 
 	var profiles []model.Profile
+
 	if err := json.NewDecoder(file).Decode(&profiles); err != nil {
 		return err
 	}
 
 	for _, p := range profiles {
-		if err := repo.Create(&p); err != nil {
-			continue
-		} // rely on UNIQUE(name)
+		_ = repo.CreateOrGetProfile(p.Name)
 	}
 
 	return nil

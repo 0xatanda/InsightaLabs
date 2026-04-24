@@ -14,3 +14,17 @@ type Profile struct {
 	CountryProbability float64   `json:"country_probability"`
 	CreatedAt          time.Time `json:"created_at"`
 }
+
+type Filters struct {
+	Gender                string
+	AgeGroup              string
+	CountryID             string
+	MinAge                *int
+	MaxAge                *int
+	MinGenderProbability  *float64
+	MinCountryProbability *float64
+	SortBy                string
+	Order                 string
+	Page                  int
+	Limit                 int
+}

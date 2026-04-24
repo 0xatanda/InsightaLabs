@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/0xatanda/InsightaLabs/internal/model"
 	"github.com/0xatanda/InsightaLabs/internal/parser"
@@ -18,9 +19,62 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	_ = json.NewEncoder(w).Encode(data)
 }
 
+func errorResp(msg string) map[string]string {
+	return map[string]string{
+		"status":  "error",
+		"message": msg,
+	}
+}
+
+// ✅ CREATE PROFILE (THIS WAS MISSING — ROOT ISSUE)
+func (h *Handler) CreateProfile(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodPost {
+		writeJSON(w, 405, errorResp("method not allowed"))
+		return
+	}
+
+	var req struct {
+		Name string `json:"name"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, 400, errorResp("invalid request body"))
+		return
+	}
+
+	req.Name = strings.TrimSpace(req.Name)
+	if req.Name == "" {
+		writeJSON(w, 400, errorResp("Missing or empty name"))
+		return
+	}
+
+	// 🔥 CALL SERVICE LAYER (you must already have this logic in repo/service)
+	profile, isExisting, err := h.Repo.CreateOrGetProfile(req.Name)
+	if err != nil {
+		writeJSON(w, 502, errorResp("external API or database error"))
+		return
+	}
+
+	if isExisting {
+		writeJSON(w, 200, map[string]any{
+			"status":  "success",
+			"message": "Profile already exists",
+			"data":    profile,
+		})
+		return
+	}
+
+	writeJSON(w, 201, map[string]any{
+		"status": "success",
+		"data":   profile,
+	})
+}
+
+// ✅ GET ALL PROFILES
 func (h *Handler) GetProfiles(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
@@ -34,13 +88,22 @@ func (h *Handler) GetProfiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if v := q.Get("page"); v != "" {
-		f.Page, _ = strconv.Atoi(v)
-	}
-	if v := q.Get("limit"); v != "" {
-		f.Limit, _ = strconv.Atoi(v)
+		if p, err := strconv.Atoi(v); err == nil && p > 0 {
+			f.Page = p
+		}
 	}
 
-	data, total, _ := h.Repo.FindAll(f)
+	if v := q.Get("limit"); v != "" {
+		if l, err := strconv.Atoi(v); err == nil && l > 0 && l <= 50 {
+			f.Limit = l
+		}
+	}
+
+	data, total, err := h.Repo.FindAll(f)
+	if err != nil {
+		writeJSON(w, 500, errorResp("failed to fetch profiles"))
+		return
+	}
 
 	writeJSON(w, 200, map[string]any{
 		"status": "success",
@@ -51,23 +114,50 @@ func (h *Handler) GetProfiles(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// ✅ NATURAL LANGUAGE SEARCH
 func (h *Handler) SearchProfiles(w http.ResponseWriter, r *http.Request) {
 
-	q := r.URL.Query().Get("q")
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
 
-	f, err := parser.Parse(q)
-	if err != nil {
-		writeJSON(w, 400, map[string]string{
-			"status":  "error",
-			"message": "Unable to interpret query",
-		})
+	if q == "" {
+		writeJSON(w, 400, errorResp("Missing query"))
 		return
 	}
 
-	data, total, _ := h.Repo.FindAll(f)
+	f, err := parser.Parse(q)
+	if err != nil {
+		writeJSON(w, 400, errorResp("Unable to interpret query"))
+		return
+	}
+
+	page := 1
+	limit := 10
+
+	if v := r.URL.Query().Get("page"); v != "" {
+		if p, err := strconv.Atoi(v); err == nil {
+			page = p
+		}
+	}
+
+	if v := r.URL.Query().Get("limit"); v != "" {
+		if l, err := strconv.Atoi(v); err == nil {
+			limit = l
+		}
+	}
+
+	f.Page = page
+	f.Limit = limit
+
+	data, total, err := h.Repo.FindAll(f)
+	if err != nil {
+		writeJSON(w, 500, errorResp("failed to fetch profiles"))
+		return
+	}
 
 	writeJSON(w, 200, map[string]any{
 		"status": "success",
+		"page":   page,
+		"limit":  limit,
 		"total":  total,
 		"data":   data,
 	})

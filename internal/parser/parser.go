@@ -8,60 +8,55 @@ import (
 )
 
 func Parse(q string) (*model.Filters, error) {
+
 	q = strings.ToLower(q)
 
-	f := &model.Filters{
-		Page:  1,
-		Limit: 10,
-	}
+	f := &model.Filters{Page: 1, Limit: 10}
 
-	// gender
+	found := false
+
 	if strings.Contains(q, "male") {
 		f.Gender = "male"
+		found = true
 	}
 	if strings.Contains(q, "female") {
 		f.Gender = "female"
+		found = true
 	}
 
-	// age groups
-	if strings.Contains(q, "child") {
-		f.AgeGroup = "child"
-	}
-	if strings.Contains(q, "teen") {
-		f.AgeGroup = "teenager"
-	}
-	if strings.Contains(q, "adult") {
-		f.AgeGroup = "adult"
-	}
-	if strings.Contains(q, "senior") {
-		f.AgeGroup = "senior"
-	}
-
-	// young rule
 	if strings.Contains(q, "young") {
-		min := 16
-		max := 24
+		min, max := 16, 24
 		f.MinAge = &min
 		f.MaxAge = &max
+		found = true
 	}
 
-	// country
+	if strings.Contains(q, "above 30") {
+		min := 30
+		f.MinAge = &min
+		found = true
+	}
+
+	if strings.Contains(q, "teenager") {
+		f.AgeGroup = "teenager"
+		found = true
+	}
+
 	if strings.Contains(q, "nigeria") {
 		f.CountryID = "NG"
+		found = true
 	}
 	if strings.Contains(q, "kenya") {
 		f.CountryID = "KE"
+		found = true
 	}
 	if strings.Contains(q, "angola") {
 		f.CountryID = "AO"
+		found = true
 	}
 
-	if f.Gender == "" &&
-		f.AgeGroup == "" &&
-		f.CountryID == "" &&
-		f.MinAge == nil &&
-		f.MaxAge == nil {
-		return nil, errors.New("unable to interpret query")
+	if !found {
+		return nil, errors.New("unable to interpret")
 	}
 
 	return f, nil
