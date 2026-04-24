@@ -23,7 +23,10 @@ func Run(repo *repository.Repo) error {
 	}
 
 	for _, p := range profiles {
-		_ = repo.CreateOrGetProfile(p.Name)
+		_, _, err = repo.CreateOrGetProfile(p.Name)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
