@@ -27,7 +27,7 @@ func (h *Handler) Profiles(w http.ResponseWriter, r *http.Request) {
 	if q.Page < 1 || q.Limit < 1 {
 		utils.JSON(w, 400, map[string]string{
 			"status":  "error",
-			"message": "Invalid query parameters",
+			"message": "Unable to interpret query",
 		})
 		return
 	}
@@ -43,7 +43,7 @@ func (h *Handler) Profiles(w http.ResponseWriter, r *http.Request) {
 		if err.Error() == "Invalid query parameters" {
 			utils.JSON(w, 400, map[string]string{
 				"status":  "error",
-				"message": "Invalid query parameters",
+				"message": "Unable to interpret query",
 			})
 			return
 		}
@@ -85,7 +85,7 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	if page < 1 || limit < 1 {
 		utils.JSON(w, 400, map[string]string{
 			"status":  "error",
-			"message": "Invalid query parameters",
+			"message": "Unable to interpret query",
 		})
 		return
 	}
