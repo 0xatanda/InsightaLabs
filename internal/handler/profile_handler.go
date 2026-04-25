@@ -43,7 +43,7 @@ func (h *Handler) Profiles(w http.ResponseWriter, r *http.Request) {
 		if err.Error() == "Invalid query parameters" {
 			utils.JSON(w, 400, map[string]string{
 				"status":  "error",
-				"message": "Unable to interpret query",
+				"message": "Invalid query parameters",
 			})
 			return
 		}

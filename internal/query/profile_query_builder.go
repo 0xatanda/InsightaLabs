@@ -71,10 +71,7 @@ func (b *Builder) Build(q dto.ProfileQuery) (string, []any, string, []any) {
 		order = "ASC"
 	}
 
-	base += fmt.Sprintf(" ORDER BY %s %s", sort, order)
-
-	// ALWAYS deterministic pagination (CRITICAL)
-	base += " , id ASC"
+	base += fmt.Sprintf(" ORDER BY %s %s, id ASC", sort, order)
 
 	offset := (q.Page - 1) * q.Limit
 	base += fmt.Sprintf(" LIMIT %d OFFSET %d", q.Limit, offset)

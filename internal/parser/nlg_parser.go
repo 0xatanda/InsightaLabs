@@ -128,6 +128,27 @@ func (p *Parser) Parse(q string) (dto.ProfileQuery, bool) {
 		}
 	}
 
+	// "young males" → age 16–24 + male
+	if strings.Contains(q, "young") && strings.Contains(q, "male") {
+		min := 16
+		max := 24
+		result.Gender = "male"
+		result.MinAge = &min
+		result.MaxAge = &max
+	}
+
+	// "females above 30"
+	if strings.Contains(q, "female") && strings.Contains(q, "above") {
+		result.Gender = "female"
+	}
+
+	// "adult males from kenya"
+	if strings.Contains(q, "adult") && strings.Contains(q, "male") && strings.Contains(q, "kenya") {
+		result.Gender = "male"
+		result.AgeGroup = "adult"
+		result.Country = "KE"
+	}
+
 	// ----------------------------
 	// VALIDITY RULE (CRITICAL FOR 5/5)
 	// ----------------------------
